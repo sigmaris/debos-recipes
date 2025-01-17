@@ -1,4 +1,4 @@
-{{- $suite := or .suite "bookworm" -}}
+{{- $suite := or .suite "trixie" -}}
 {{- $dist := or .dist "debian" -}}
 {{- $contrib := or .contrib "true" -}}
 {{- $nonfree := or .nonfree "true" -}}
