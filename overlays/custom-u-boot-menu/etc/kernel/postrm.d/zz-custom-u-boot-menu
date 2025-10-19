@@ -1,9 +1,0 @@
-#!/bin/sh
-
-set -e
-
-if [ -x /usr/local/sbin/custom-u-boot-menu ]
-then
-	# Update u-boot custom menu
-	/usr/local/sbin/custom-u-boot-menu
-fi
