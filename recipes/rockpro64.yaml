@@ -18,9 +18,7 @@ actions:
 {{ if eq $dist "debian" }}
       - contrib
       - non-free
-{{ if eq $suite "bookworm" }}
       - non-free-firmware
-{{ end }}
     mirror: https://deb.debian.org/debian
 {{ else }}
       - restricted
@@ -56,9 +54,7 @@ actions:
       - u-boot-menu
       - libubootenv-tool
       - systemd-repart
-{{ if eq $suite "bookworm" }}
       - systemd-resolved
-{{ end }}
       - systemd-timesyncd
       - vim
       - wget
@@ -95,18 +91,13 @@ actions:
 
   - action: overlay
     source: ../overlays/apt-repo
-    description: Add our custom APT repo GPG key and blacklist
+    description: Add our custom APT repo GPG key
 
 {{ if eq $dist "debian" }}
   - action: run
     chroot: true
-    command: echo "deb http://sigmaris.github.io/rockpkgs {{ $suite }} main" > /etc/apt/sources.list.d/sigmaris_rockpkgs.list
+    command: echo "deb [signed-by=/etc/apt/keyrings/sigmaris.pgp] http://sigmaris.github.io/rockpkgs {{ $suite }} main" > /etc/apt/sources.list.d/sigmaris_rockpkgs.list
     description: Configure our custom APT repo
-
-  - action: run
-    chroot: true
-    script: ../scripts/apt-repo.sh
-    description: Trust our custom APT repo's GPG key then remove it
 {{ end }}
 
 {{ if .repo_kernel_version }}
@@ -159,7 +150,7 @@ actions:
     mountpoints:
       - mountpoint: /
         partition: root
-        options: 
+        options:
           - "x-systemd.growfs"
     partitions:
       - name: idbloader
