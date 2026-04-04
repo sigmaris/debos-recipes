@@ -1,0 +1,206 @@
+{{- $suite := or .suite "forky" -}}
+{{- $dist := or .dist "debian" -}}
+{{- $contrib := or .contrib "true" -}}
+{{- $nonfree := or .nonfree "true" -}}
+{{- $default_image := printf "%s-%s-dragonq6a.img" $dist $suite -}}
+{{- $image := or .image $default_image -}}
+architecture: arm64
+
+actions:
+{{ if .extract }}
+  - action: unpack
+    file: "{{ $suite }}-rootfs.tar.gz"
+    description: unpack pre-built rootfs
+{{ else }}
+  - action: debootstrap
+    suite: "{{ $suite }}"
+    keyring-file: /usr/share/keyrings/{{ $dist }}-archive-keyring.gpg
+    components:
+      - main
+{{ if eq $dist "debian" }}
+      - contrib
+      - non-free
+      - non-free-firmware
+    mirror: https://deb.debian.org/debian
+{{ else }}
+      - restricted
+      - universe
+    mirror: http://ports.ubuntu.com
+{{ end }}
+    description: debootstrap root filesystem from scratch
+
+  - action: pack
+    file: "{{ $suite }}-rootfs.tar.gz"
+    compression: gz
+    description: save basic root filesystem for later use
+{{ end }}
+
+  - action: overlay
+    source: ../overlays/radxa-qcs6490-repo
+    description: Overlay radxa repo config
+
+  - action: run
+    command: apt install -y /opt/radxa-repo/radxa-archive-keyring_*_all.deb /opt/radxa-repo/linux-firmware_*_all.deb
+    chroot: true
+    description: Install radxa repo keyring package and dummy linux-firmware package to satisfy dependencies
+
+  - action: run
+    command: rm -rf /opt/radxa-repo
+    chroot: true
+    description: Remove temporary radxa repo packages
+
+  - action: apt
+    packages:
+      - bluez-firmware
+      - curl
+      - dbus
+      - default-dbus-session-bus
+      - file
+      - firmware-atheros
+      - firmware-qcom-soc
+      - gdisk
+      - gnupg
+      - initramfs-tools
+      - libdrm-freedreno1
+      - libqmi-utils
+      - linux-image-radxa-dragon-q6a
+      - locales
+      - lsb-release
+      - make-dynpart-mappings
+      - man-db
+      - openssh-server
+      - parted
+      - protection-domain-mapper
+      - qrtr-tools
+      - radxa-bootutils
+      - rmtfs
+      - sudo
+      - systemd-boot
+      - systemd-repart
+      - systemd-resolved
+      - systemd-timesyncd
+      - tqftpserv
+      - vim
+      - wget
+      - wireless-regdb
+      - wpasupplicant
+      - zstd
+    description: install apt packages
+
+  - action: run
+    chroot: true
+    command: echo RESUME=none > /etc/initramfs-tools/conf.d/resume
+    description: Disable resuming from hibernation as it causes delay in boot
+
+  - action: overlay
+    source: ../overlays/ssh-keygen
+    description: >-
+      Set up script to run at first boot to
+      regenerate SSH host keys if missing.
+
+  - action: overlay
+    source: ../overlays/resize-rootfs
+    description: >-
+      Set up script to run at first boot to
+      resize root filesystem to fill disk/mmc/sd card
+
+  - action: run
+    chroot: true
+    script: ../scripts/setup-openssh.sh
+    description: Remove SSH host keys so they are regenerated on boot
+
+  - action: run
+    chroot: true
+    script: ../scripts/setup-user.sh
+    description: Set up the 'rock' user
+
+  - action: run
+    chroot: true
+    command: echo q6a > /etc/hostname
+    description: Set hostname to 'q6a'
+
+  - action: run
+    chroot: true
+    command: echo qcom/qcs6490-radxa-dragon-q6a.dtb > /etc/kernel/devicetree
+    description: Use devicetree qcom/qcs6490-radxa-dragon-q6a.dtb
+
+  - action: overlay
+    source: ../overlays/networkd
+    description: Configure systemd-networkd to use DHCP for the wired and wireless networks
+
+  - action: run
+    chroot: true
+    script: ../scripts/setup-networking.sh
+    description: Use systemd tools for network config, DNS and time sync
+
+  - action: run
+    chroot: true
+    command: update-initramfs -c -k all
+    description: Create initramfs
+
+  - action: run
+    chroot: true
+    command: apt-get clean
+    description: Save space by removing apt cache
+
+  - action: image-partition
+    description: Partition SD card image
+    imagename: "{{ $image }}"
+    imagesize: 2100MB
+    partitiontype: gpt
+    mountpoints:
+      - mountpoint: /
+        partition: root
+        options:
+          - "x-systemd.growfs"
+      - mountpoint: /boot/efi
+        partition: EFI
+    partitions:
+      - name: EFI
+        parttype: c12a7328-f81f-11d2-ba4b-00a0c93ec93b # EFI System Partition
+        fs: vfat
+        start: 0%
+        end: 512MB
+        flags:
+          - esp
+          - boot
+      - name: root
+        parttype: b921b045-1df0-41c3-af44-4c6f280d3fae # Root Partition (64-bit ARM/AArch64)
+        fs: ext4
+        start: 512MB
+        end: 100%
+
+  - action: filesystem-deploy
+    setup-fstab: true
+    setup-kernel-cmdline: true
+    description: >-
+      Deploy filesystem onto image, generate /etc/fstab and /etc/kernel/cmdline,
+      and switch the chroot to the mounted image's root filesystem
+      (further chroot commands affect the root filesystem inside the image)
+
+  - action: run
+    command: sed -i -e 's/$/ console=ttyMSM0,115200n8/' /etc/kernel/cmdline
+    chroot: true
+    description: Add console=ttyMSM0,115200n8 to kernel cmdline
+
+  - action: run
+    chroot: true
+    command: dpkg-reconfigure -f noninteractive systemd-boot
+    description: Install systemd-boot to the EFI System Partition
+
+  - action: run
+    chroot: true
+    command: kernel-install add 6.18.2-4-qcom /boot/vmlinuz-6.18.2-4-qcom
+    description: Update systemd-boot to include the kernel and initramfs
+
+  - action: run
+    chroot: true
+    command: apt-get clean
+    description: Save space by removing apt cache
+
+  - action: run
+    chroot: false
+    command: ln -sf /run/systemd/resolve/stub-resolv.conf "${ROOTDIR}/etc/resolv.conf"
+    description: >-
+      Replace /etc/resolv.conf with a symlink to systemd-resolved's stub resolver
+      config file. This would break DNS inside the chroot so is done last.

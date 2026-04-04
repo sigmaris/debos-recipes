@@ -1,0 +1,7 @@
+Package: linux-firmware
+Version: 20260307.dummy1-1
+Maintainer: Hugh Cole-Baker <sigmaris@gmail.com>
+Architecture: all
+Description: Dummy package to fulfil linux-firmware dependency on Debian.
+ The real linux-firmware package is Ubuntu-specific and we need this to
+ satisfy the dependency of Qualcomm's Dragonwing firmware package on Debian.

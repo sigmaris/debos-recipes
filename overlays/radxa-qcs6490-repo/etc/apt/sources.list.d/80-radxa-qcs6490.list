@@ -1,0 +1,1 @@
+deb [signed-by=/usr/share/keyrings/radxa-archive-keyring.gpg] https://radxa-repo.github.io/qcs6490-noble qcs6490-noble main
