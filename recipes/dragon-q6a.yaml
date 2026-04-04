@@ -56,8 +56,8 @@ actions:
       - dbus
       - default-dbus-session-bus
       - file
-      - firmware-atheros
       - firmware-qcom-soc
+      - firmware-realtek
       - gdisk
       - gnupg
       - initramfs-tools
