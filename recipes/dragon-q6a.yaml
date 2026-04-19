@@ -60,6 +60,7 @@ actions:
       - firmware-realtek
       - gdisk
       - gnupg
+#     - hexagon-dsp-binaries-radxa-dragon-q6a
       - initramfs-tools
       - libdrm-freedreno1
       - libqmi-utils
@@ -91,6 +92,10 @@ actions:
     chroot: true
     command: echo RESUME=none > /etc/initramfs-tools/conf.d/resume
     description: Disable resuming from hibernation as it causes delay in boot
+
+  - action: overlay
+    source: ../overlays/radxa-qcs6490-firmware
+    description: Ensure firmware files for QCS6490 go in initramfs
 
   - action: overlay
     source: ../overlays/ssh-keygen
