@@ -1,0 +1,10 @@
+[Unit]
+Description=adsprpc Service
+After=dev-fastrpc\x2dadsp.device dev-fastrpc\x2dadsp\x2dsecure.device
+
+[Service]
+User=fastrpc
+Group=fastrpc
+Restart=always
+Type=exec
+ExecStart=/usr/bin/adsprpcd

@@ -1,0 +1,10 @@
+[Unit]
+Description=cdsprpc Service
+After=dev-fastrpc\x2dcdsp.device dev-fastrpc\x2dcdsp\x2dsecure.device
+
+[Service]
+User=fastrpc
+Group=fastrpc
+Restart=always
+Type=exec
+ExecStart=/usr/bin/cdsprpcd

@@ -55,15 +55,23 @@ actions:
       - curl
       - dbus
       - default-dbus-session-bus
+      - fastrpc # TODO: 1.0.4 not yet in Debian, replace by fastrpc-support when ready
+      - fastrpc-test
       - file
       - firmware-qcom-soc
       - firmware-realtek
       - gdisk
       - gnupg
-#     - hexagon-dsp-binaries-radxa-dragon-q6a
+#     - hexagon-dsp-binaries-radxa-dragon-q6a # TODO: not yet in testing
       - initramfs-tools
+      - libadsprpc1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
+      - libadsp-default-listener1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
+      - libcdsprpc1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
+      - libcdsp-default-listener1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
       - libdrm-freedreno1
       - libqmi-utils
+      - libsdsprpc1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
+      - libsdsp-default-listener1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
       - linux-image-radxa-dragon-q6a
       - locales
       - lsb-release
@@ -74,7 +82,6 @@ actions:
       - protection-domain-mapper
       - qrtr-tools
       - radxa-bootutils
-      - rmtfs
       - sudo
       - systemd-boot
       - systemd-repart

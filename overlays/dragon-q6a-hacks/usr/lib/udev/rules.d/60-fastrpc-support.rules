@@ -1,0 +1,4 @@
+ACTION=="add", SUBSYSTEM=="misc", KERNEL=="fastrpc-adsp", OWNER="fastrpc", GROUP="fastrpc", MODE="0640", TAG+="systemd", ENV{SYSTEMD_WANTS}+="adsprpcd.service"
+ACTION=="add", SUBSYSTEM=="misc", KERNEL=="fastrpc-adsp-secure", OWNER="fastrpc", GROUP="fastrpc", MODE="0640", TAG+="systemd", ENV{SYSTEMD_WANTS}+="adsprpcd.service"
+ACTION=="add", SUBSYSTEM=="misc", KERNEL=="fastrpc-cdsp", OWNER="fastrpc", GROUP="fastrpc", MODE="0640", TAG+="systemd", ENV{SYSTEMD_WANTS}+="cdsprpcd.service"
+ACTION=="add", SUBSYSTEM=="misc", KERNEL=="fastrpc-cdsp-secure", OWNER="fastrpc", GROUP="fastrpc", MODE="0640", TAG+="systemd", ENV{SYSTEMD_WANTS}+="cdsprpcd.service"
