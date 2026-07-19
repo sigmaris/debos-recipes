@@ -1,8 +1,8 @@
-{{- $suite := or .suite "trixie" -}}
+{{- $suite := or .suite "forky" -}}
 {{- $dist := or .dist "debian" -}}
 {{- $contrib := or .contrib "true" -}}
 {{- $nonfree := or .nonfree "true" -}}
-{{- $default_image := printf "%s-%s-sdm845odin.img" $dist $suite -}}
+{{- $default_image := printf "%s-%s-dragonq6a.img" $dist $suite -}}
 {{- $image := or .image $default_image -}}
 architecture: arm64
 
@@ -35,38 +35,35 @@ actions:
     description: save basic root filesystem for later use
 {{ end }}
 
-  - action: apt
-    recommends: false
-    packages:
-      - mobian-archive-keyring
-    description: Install mobian-archive-keyring
-
   - action: overlay
-    description: Enable Mobian repository
-    source: ../overlays/mobian-apt
+    source: ../overlays/radxa-qcs6490-repo
+    description: Overlay radxa repo config
 
   - action: run
-    description: Setup Mobian repository
+    command: apt install -y /opt/radxa-repo/radxa-archive-keyring_*_all.deb /opt/radxa-repo/linux-firmware_*_all.deb
     chroot: true
-    script: ../scripts/setup-mobian-apt.sh {{ $suite }} {{ $suite }} {{ $contrib }} {{ $nonfree }}
+    description: Install radxa repo keyring package and dummy linux-firmware package to satisfy dependencies
+
+  - action: run
+    command: rm -rf /opt/radxa-repo
+    chroot: true
+    description: Remove temporary radxa repo packages
 
   - action: apt
     packages:
-      - alsa-ucm-conf
-      - alsa-utils
       - bluez-firmware
       - curl
       - dbus
       - default-dbus-session-bus
-      - evtest
       - file
-      - firmware-atheros
       - firmware-qcom-soc
+      - firmware-realtek
       - gdisk
       - gnupg
       - initramfs-tools
       - libdrm-freedreno1
       - libqmi-utils
+      - linux-image-radxa-dragon-q6a
       - locales
       - lsb-release
       - make-dynpart-mappings
@@ -74,11 +71,11 @@ actions:
       - openssh-server
       - parted
       - protection-domain-mapper
-      - qcom-phone-utils
       - qrtr-tools
+      - radxa-bootutils
       - rmtfs
       - sudo
-      - sway
+      - systemd-boot
       - systemd-repart
       - systemd-resolved
       - systemd-timesyncd
@@ -87,9 +84,8 @@ actions:
       - wget
       - wireless-regdb
       - wpasupplicant
-      - wvkbd
       - zstd
-    description: install some minimal packages
+    description: install apt packages
 
   - action: run
     chroot: true
@@ -113,17 +109,6 @@ actions:
     script: ../scripts/setup-openssh.sh
     description: Remove SSH host keys so they are regenerated on boot
 
-  - action: overlay
-    source: ../overlays/apt-repo
-    description: Add our custom APT repo GPG key
-
-{{ if eq $dist "debian" }}
-  - action: run
-    chroot: true
-    command: echo "deb [signed-by=/etc/apt/keyrings/sigmaris.pgp] http://sigmaris.github.io/rockpkgs {{ $suite }} main" > /etc/apt/sources.list.d/sigmaris_rockpkgs.list
-    description: Configure our custom APT repo
-{{ end }}
-
   - action: run
     chroot: true
     script: ../scripts/setup-user.sh
@@ -131,50 +116,13 @@ actions:
 
   - action: run
     chroot: true
-    command: echo odin > /etc/hostname
-    description: Set hostname to 'odin'
+    command: echo q6a > /etc/hostname
+    description: Set hostname to 'q6a'
 
   - action: run
     chroot: true
-    command: echo qcom/sdm845-ayn-odin-m2.dtb > /etc/kernel/devicetree
-    description: Use devicetree qcom/sdm845-ayn-odin-m2.dtb
-
-  - action: overlay
-    source: ../overlays/wlan-mac-from-android
-    description: Script to set wlan0 persistent MAC address from Android
-
-  - action: run
-    chroot: true
-    command: systemctl enable set-wlan-mac.service
-    description: Set wlan0 persistent MAC address from Android on 1st boot
-
-  - action: overlay
-    source: ../overlays/wpa-supplicant
-    description: Configure wpa-supplicant for connecting to WiFi networks
-
-  - action: run
-    chroot: true
-    command: systemctl disable wpa_supplicant.service
-    description: Disable DBUS-controlled wpa_supplicant
-
-  - action: run
-    chroot: true
-    command: systemctl enable wpa_supplicant@wlan0.service
-    description: Enable wpa_supplicant for wlan0
-
-  - action: overlay
-    source: ../overlays/wpa-supplicant
-    description: Configure wpa-supplicant for connecting to WiFi networks
-
-  - action: run
-    chroot: true
-    command: systemctl disable wpa_supplicant.service
-    description: Disable DBUS-controlled wpa_supplicant
-
-  - action: run
-    chroot: true
-    command: systemctl enable wpa_supplicant@wlan0.service
-    description: Enable wpa_supplicant for wlan0
+    command: echo qcom/qcs6490-radxa-dragon-q6a.dtb > /etc/kernel/devicetree
+    description: Use devicetree qcom/qcs6490-radxa-dragon-q6a.dtb
 
   - action: overlay
     source: ../overlays/networkd
@@ -185,46 +133,10 @@ actions:
     script: ../scripts/setup-networking.sh
     description: Use systemd tools for network config, DNS and time sync
 
-{{ if .personalize }}
   - action: run
     chroot: true
-    script: ../scripts/insert-wifi-details.sh
-    description: Insert site-specific wifi details
-{{ end }}
-
-  - action: overlay
-    origin: artifacts
-    source: linuxdebs
-    destination: /linuxdebs
-    description: Copy in pre-built kernel package files
-
-  - action: run
-    command: dpkg -i /linuxdebs/*.deb
-    chroot: true
-    description: Install pre-built kernel package files
-
-  - action: run
-    command: rm -rf /linuxdebs
-    chroot: true
-    description: Clean pre-built kernel package files off filesystem after installation.
-
-  - action: overlay
-    source: ../overlays/odin-debugging
-    description: Configure things for debugging bootup
-
-  - action: run
-    command: systemctl disable getty@tty1.service
-    chroot: true
-    description: Disable getty clearing screen so we see console messages
-
-  - action: run
-    command: chmod +x /etc/rc.local
-    chroot: true
-    description: Make /etc/rc.local executable
-
-  - action: overlay
-    source: ../overlays/odin-sway
-    description: Configure Sway window manager
+    command: update-initramfs -c -k all
+    description: Create initramfs
 
   - action: run
     chroot: true
@@ -234,7 +146,7 @@ actions:
   - action: image-partition
     description: Partition SD card image
     imagename: "{{ $image }}"
-    imagesize: 2000MB
+    imagesize: 2100MB
     partitiontype: gpt
     mountpoints:
       - mountpoint: /
@@ -248,14 +160,14 @@ actions:
         parttype: c12a7328-f81f-11d2-ba4b-00a0c93ec93b # EFI System Partition
         fs: vfat
         start: 0%
-        end: 256MB
+        end: 512MB
         flags:
           - esp
           - boot
       - name: root
         parttype: b921b045-1df0-41c3-af44-4c6f280d3fae # Root Partition (64-bit ARM/AArch64)
         fs: ext4
-        start: 0%
+        start: 512MB
         end: 100%
 
   - action: filesystem-deploy
@@ -267,14 +179,19 @@ actions:
       (further chroot commands affect the root filesystem inside the image)
 
   - action: run
-    command: sed -i -e 's/$/ console=tty0/' /etc/kernel/cmdline
+    command: sed -i -e 's/$/ console=ttyMSM0,115200n8/' /etc/kernel/cmdline
     chroot: true
-    description: Add console=tty0 to kernel cmdline
+    description: Add console=ttyMSM0,115200n8 to kernel cmdline
 
-  - action: apt
-    packages:
-      - systemd-boot
-      - initramfs-tools
+  - action: run
+    chroot: true
+    command: dpkg-reconfigure -f noninteractive systemd-boot
+    description: Install systemd-boot to the EFI System Partition
+
+  - action: run
+    chroot: true
+    command: kernel-install add 6.18.2-4-qcom /boot/vmlinuz-6.18.2-4-qcom
+    description: Update systemd-boot to include the kernel and initramfs
 
   - action: run
     chroot: true
