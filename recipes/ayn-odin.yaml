@@ -1,4 +1,4 @@
-{{- $suite := or .suite "bookworm" -}}
+{{- $suite := or .suite "trixie" -}}
 {{- $dist := or .dist "debian" -}}
 {{- $contrib := or .contrib "true" -}}
 {{- $nonfree := or .nonfree "true" -}}
@@ -52,10 +52,13 @@ actions:
 
   - action: apt
     packages:
+      - alsa-ucm-conf
+      - alsa-utils
       - bluez-firmware
       - curl
       - dbus
       - default-dbus-session-bus
+      - evtest
       - file
       - firmware-atheros
       - firmware-qcom-soc
@@ -112,18 +115,13 @@ actions:
 
   - action: overlay
     source: ../overlays/apt-repo
-    description: Add our custom APT repo GPG key and blacklist
+    description: Add our custom APT repo GPG key
 
-{{ if and (eq $dist "debian") (eq $suite "bookworm") }}
+{{ if eq $dist "debian" }}
   - action: run
     chroot: true
-    command: echo "deb http://sigmaris.github.io/rockpkgs {{ $suite }} main" > /etc/apt/sources.list.d/sigmaris_rockpkgs.list
+    command: echo "deb [signed-by=/etc/apt/keyrings/sigmaris.pgp] http://sigmaris.github.io/rockpkgs {{ $suite }} main" > /etc/apt/sources.list.d/sigmaris_rockpkgs.list
     description: Configure our custom APT repo
-
-  - action: run
-    chroot: true
-    script: ../scripts/apt-repo.sh
-    description: Trust our custom APT repo's GPG key then remove it
 {{ end }}
 
   - action: run
@@ -135,7 +133,7 @@ actions:
     chroot: true
     command: echo odin > /etc/hostname
     description: Set hostname to 'odin'
-  
+
   - action: run
     chroot: true
     command: echo qcom/sdm845-ayn-odin-m2.dtb > /etc/kernel/devicetree
@@ -241,7 +239,7 @@ actions:
     mountpoints:
       - mountpoint: /
         partition: root
-        options: 
+        options:
           - "x-systemd.growfs"
       - mountpoint: /boot/efi
         partition: EFI

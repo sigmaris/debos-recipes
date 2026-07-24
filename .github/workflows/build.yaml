@@ -5,14 +5,14 @@ on:
 
 jobs:
   build_images:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
           - dist: debian
-            suite: bullseye
-          - dist: debian
             suite: bookworm
+          - dist: debian
+            suite: trixie
 
     steps:
       - uses: actions/checkout@v3
@@ -48,7 +48,7 @@ jobs:
           gzip ${{ matrix.dist }}-${{ matrix.suite }}-rockpro64.img
 
       - name: Upload gzipped image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.dist }}-${{ matrix.suite }}-rockpro64.img.gz
           path: ${{ matrix.dist }}-${{ matrix.suite }}-rockpro64.img.gz
