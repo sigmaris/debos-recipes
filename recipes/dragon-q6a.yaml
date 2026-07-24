@@ -40,9 +40,9 @@ actions:
     description: Overlay radxa repo config
 
   - action: run
-    command: apt install -y /opt/radxa-repo/radxa-archive-keyring_*_all.deb /opt/radxa-repo/linux-firmware_*_all.deb
+    command: apt install -y /opt/radxa-repo/radxa-archive-keyring_*_all.deb
     chroot: true
-    description: Install radxa repo keyring package and dummy linux-firmware package to satisfy dependencies
+    description: Install radxa repo keyring package
 
   - action: run
     command: rm -rf /opt/radxa-repo
@@ -62,7 +62,7 @@ actions:
       - firmware-realtek
       - gdisk
       - gnupg
-#     - hexagon-dsp-binaries-radxa-dragon-q6a # TODO: not yet in testing
+#     - hexagon-dsp-binaries-radxa-dragon-q6a # TODO: use this instead of radxa-firmware-qcs6490 when using fastrpc-support package from Debian
       - initramfs-tools
       - libadsprpc1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
       - libadsp-default-listener1 # replace by libfastrpc1 when fastrpc 1.0.4 is in Debian
@@ -80,8 +80,10 @@ actions:
       - openssh-server
       - parted
       - protection-domain-mapper
+      - qcom-qnn-sdk-v68
       - qrtr-tools
       - radxa-bootutils
+      - radxa-firmware-qcs6490 # this "goes with" the radxa fastrpc package and contains the hexagon DSP binaries
       - sudo
       - systemd-boot
       - systemd-repart
@@ -103,6 +105,11 @@ actions:
   - action: overlay
     source: ../overlays/radxa-qcs6490-firmware
     description: Ensure firmware files for QCS6490 go in initramfs
+
+  - action: run
+    chroot: true
+    command: adduser --system --group fastrpc
+    description: Set up fastrpc daemon user (temporary hack until we use Debian's fastrpc-support package)
 
   - action: overlay
     source: ../overlays/ssh-keygen
@@ -202,7 +209,7 @@ actions:
 
   - action: run
     chroot: true
-    command: kernel-install add 6.18.2-4-qcom /boot/vmlinuz-6.18.2-4-qcom
+    command: kernel-install add 7.0.11-3-qcom /boot/vmlinuz-7.0.11-3-qcom
     description: Update systemd-boot to include the kernel and initramfs
 
   - action: run
